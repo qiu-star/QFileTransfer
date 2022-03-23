@@ -70,25 +70,64 @@ class Server:
         password = header['password']
         time = header['time']
         # check whether the user and password is correct
-        sql = "select * from user where username = '%s' and password = '%s'"%(username,password)
+        sql = "select * from user where username = '%s' and password = '%s'" % (username,password)
         self.__cursor.execute(sql)
         data = self.__cursor.fetchone()
         login_log = ""
         if data:
             self.login_succ(connection, username)
-            login_log = '\n%s try to login at "%s" , Stat: Success ' %(username, time)
+            login_log = '\n%s try to login at "%s" , Stat: Success ' % (username, time)
         else:
-            print("Fail")
-            login_log = '\n%s try to login at "%s" , Stat: Fail ' %(username, time)
+            self.login_fail(connection, username)
+            login_log = '\n%s try to login at "%s" , Stat: Fail ' % (username, time)
         # write log
         self.write_log(login_log)
+
+    def register_succ(self, connection, username, password, time):
+        sql = "insert into user values ('%s','%s','%s')" % (username, password, time)
+        self.__cursor.execute(sql)
+        self.__db.commit()
+        header = {
+            'Feedback': 'Register',
+            'stat': 'Success',
+            'fileSize': '',
+            'user': username
+        }
+        self.send_header(connection, header, '128s')
+
+    def register_fail(self, connection, username):
+        header = {
+            'Feedback': 'Register',
+            'stat': 'Exist',
+            'fileSize': '',
+            'user': username
+        }
+        self.send_header(connection, header, '128s')
+
+    def register(self, connection, header):
+        username = header['user']
+        password = header['password']
+        time = header['time']
+        # check whether the user has exists
+        sql = "select * from user where username = '%s'" % (username)
+        self.__cursor.execute(sql)
+        data = self.__cursor.fetchone()
+        register_log = ""
+        if data:
+            # user exists
+            self.register_fail(connection, username)
+            register_log = '\n%s try to register at "%s" , Stat: Fail ' % (username, time)
+        else:
+            self.register_succ(connection, username, password, time)
+            register_log = '\n%s try to register at "%s" , Stat: Success ' % (username, time)
+        self.write_log(register_log)
 
     def do_command(self, connection, header):
         command = header['Command']
         if command == 'Login':
             self.login(connection, header)
         elif command == 'Register':
-            print('Register')
+            self.register(connection, header)
         elif command == 'Upload':
             print('Upload')
         elif command == 'Download':

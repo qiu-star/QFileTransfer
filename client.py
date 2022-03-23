@@ -1,6 +1,7 @@
 import socket
 import ssl, time, os, struct, json, tkinter
 
+
 class Client:
     def __init__(self):
         # generate ssl context
@@ -11,12 +12,21 @@ class Client:
 
         self.__sock = socket.create_connection(('127.0.0.1', 9999))
         self.__ssock = context.wrap_socket(self.__sock, server_hostname='SERVER', server_side=False)
-    
+
     def send_header(self, header, hformat):
         header_hex = bytes(json.dumps(header).encode('utf-8'))
         fhead = struct.pack(hformat, header_hex)
         self.__ssock.send(fhead)
         print('send over...')
+
+    def receive_header(self, hformat):
+        header_size = struct.calcsize(hformat)
+        buf = self.__ssock.recv(header_size)
+        if not buf:
+            return None
+        header_json = str(struct.unpack(hformat, buf)[0], encoding='utf-8').strip('\00')
+        header = json.loads(header_json)
+        return header
 
     def receive_file(self, file_size, file_name):
         print('file name: %s, filesize: %s' % (file_name, file_size))
@@ -43,14 +53,11 @@ class Client:
             'user': username,
             'password': password,
         }
-        self.send_header(header,'1024s')
+        self.send_header(header, '1024s')
         # wait for the server answer
-        fileinfo_size = struct.calcsize('128s')
-        buf = self.__ssock.recv(fileinfo_size)
-        if not buf:
+        header = self.receive_header('128s')
+        if not header:
             return False
-        header_json = str(struct.unpack('128s', buf)[0], encoding='utf-8').strip('\00')
-        header = json.loads(header_json)
         # from the server answer, we will know whether login successfully or not
         stat = header['stat']
         if stat != 'Success':
@@ -60,8 +67,29 @@ class Client:
         file_name = os.path.join('./client_cache/', 'file_catalogue.txt')
         self.receive_file(file_size, file_name)
         return True
-        
+
+    def register(self, username, password):
+        header = {
+            'Command': 'Register',
+            'fileName': '',
+            'fileSize': '',
+            'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            'user': username,
+            'password': password,
+        }
+        self.send_header(header, '1024s')
+        header = self.receive_header('128s')
+        if not header:
+            return False
+        stat = header['stat']
+        if stat == 'Success':
+            return True
+        else:
+            return False
+
 
 if __name__ == "__main__":
     client = Client()
-    client.login("qiu", "123")
+    # client.register("qiu", "123")
+    client.login("qiu", "123")  # login succ
+    client.login("qiu", "12")   # login fail
