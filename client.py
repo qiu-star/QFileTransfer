@@ -37,10 +37,10 @@ class Client:
         header = json.loads(header_json)
         return header
 
-    def receive_file(self, file_size, file_name):
-        print('file name: %s, filesize: %s' % (file_name, file_size))
+    def receive_file(self, file_size, file_path):
+        print('file name: %s, filesize: %s' % (file_path, file_size))
         recvd_size = 0
-        file = open(file_name, 'wb')
+        file = open(file_path, 'wb')
         print('start receiving...')
         while not recvd_size == file_size:
             if file_size - recvd_size > 1024:
@@ -73,7 +73,7 @@ class Client:
             return False
         # recieve the file name the user upload on the server
         file_names = self.receive_header('1024s')
-        print(file_names) # @TODO: show the file name on GUI
+        print(file_names)  # @TODO: show the file name on GUI
         return True
 
     def register(self, username, password):
@@ -113,17 +113,25 @@ class Client:
         self.send_header(header, '1024s')
         # send file
         self.send_file(file_path)
-    
-    def download(self, file_name, username):
-        # header = {
-        #     'Command': 'Download',
-        #     'fileName': file_name,
-        #     'fileSize': '',
-        #     'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
-        #     'user': self.username,
-        #     'password': self.password,
-        # }
-        pass
+
+    def download(self, file_name, username, password):
+        header = {
+            'Command': 'Download',
+            'fileName': file_name,
+            'fileSize': '',
+            'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            'user': username,
+            'password': password
+        }
+        self.send_header(header, '1024s')
+        response = self.receive_header('128s')
+        if not response:
+            return False
+        if response['stat'] != 'Success':
+            return False
+        file_path = os.path.join('./client_download', file_name)
+        self.receive_file(response['fileSize'], file_path)
+        return True
 
 
 if __name__ == "__main__":
@@ -132,3 +140,6 @@ if __name__ == "__main__":
     client.login("qiu", "123")  # login succ
     # client.login("qiu", "12")   # login fail
     # client.upload("doc/1.txt", "qiu")
+    # client.download("1.png", "qiu", "12") # login fail
+    # client.download("1.md", "qiu", "123") # no such file
+    # client.download("1.png", "qiu", "123") # success

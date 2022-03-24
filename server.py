@@ -60,10 +60,6 @@ class Server:
         with open('./server_file_info/server_log.txt', 'a', encoding='utf-8') as log_file:
             log_file.write(log_txt)
 
-    def write_file_catalogue(self, file_info):
-        with open('./server_file_info/file_catalogue.txt', 'a', encoding='utf-8') as file_catalogue:
-            file_catalogue.write(file_info)
-
     def file_size_to_text(self, file_size):
         if file_size < 1024:
             return "%s bytes" % (file_size)
@@ -74,13 +70,20 @@ class Server:
         else:
             return "%.2f Gb" % (((file_size/1024)/1024)/1024)
 
+    def check_user_password(self, username, password):
+        sql = "select * from user where username = '%s' and password = '%s'" % (username, password)
+        self.__cursor.execute(sql)
+        data = self.__cursor.fetchone()
+        if data:
+            return True
+        return False
+
     def login_succ(self, connection, username):
         # when client login successfully, server will send the filenames on the server to the client
-        file_catalogue = './server_file_info/file_catalogue.txt'
         header = {
             'Feedback': 'Login',
             'stat': 'Success',
-            'fileSize': os.stat(file_catalogue).st_size,
+            'fileSize': '',
             'user': username
         }
         self.send_header(connection, header, '128s')
@@ -104,11 +107,8 @@ class Server:
         password = header['password']
         time = header['time']
         # check whether the user and password is correct
-        sql = "select * from user where username = '%s' and password = '%s'" % (username,password)
-        self.__cursor.execute(sql)
-        data = self.__cursor.fetchone()
         login_log = ""
-        if data:
+        if self.check_user_password(username, password):
             self.login_succ(connection, username)
             login_log = '\n%s try to login at "%s" , Stat: Success ' % (username, time)
         else:
@@ -164,18 +164,57 @@ class Server:
         file_path = os.path.join('./server_file_storage/', user+file_name)
         self.receive_file(connection, file_size, file_path)
 
-        # @TODO: test
+        # add new file upload record
         file_size_str = self.file_size_to_text(int(file_size))
         sql = "insert into fileinfo values ('%s','%s','%s','%s','%s')" % (file_name, file_path, time, user, file_size_str)
         self.__cursor.execute(sql)
         self.__db.commit()
 
-        file_size_str = self.file_size_to_text(int(file_size))
-        new_file_info = '{"文件名": "%s", "上传者": "%s", "上传时间": "%s", "大小": "%s"}\n' % (file_name, user, time, file_size_str)
-        self.write_file_catalogue(new_file_info)
-
         upload_log = '\n%s upload a file "%s" at %s' % (user, file_name, time)
         self.write_log(upload_log)
+
+    def download(self, connection, header):
+        username = header['user']
+        password = header['password']
+        time = header['time']
+        filename = header['fileName']
+        download_log = ''
+
+        if self.check_user_password(username, password):
+            # check whether the user has uploaded the file
+            sql = "select * from fileinfo where username = '%s' and filename = '%s'" % (username, filename)
+            self.__cursor.execute(sql)
+            file_info = self.__cursor.fetchone()
+            if not file_info:
+                header = {
+                    'Feedback': 'Download',
+                    'stat': 'FileNotExist',
+                    'fileSize': '',
+                    'user': username
+                }
+                self.send_header(connection, header, '128s')
+                download_log = '\n%s try to download file "%s" at "%s" , Stat: FileNotExist ' % (username, filename, time)
+            else:
+                file_path = file_info['filepath']
+                header = {
+                    'Feedback': 'Download',
+                    'stat': 'Success',
+                    'fileSize': os.stat(file_path).st_size,
+                    'user': username
+                }
+                self.send_header(connection, header, '128s')
+                self.send_file(connection, file_path)
+                download_log = '\n%s download a file "%s" at %s' % (username, filename, time)
+        else:
+            header = {
+                'Feedback': 'Download',
+                'stat': 'LoginFail',
+                'fileSize': '',
+                'user': username
+            }
+            self.send_header(connection, header, '128s')
+            download_log = '\n%s try to download file "%s" at "%s" , Stat: LoginFail ' % (username, filename, time)
+        self.write_log(download_log)
 
     def do_command(self, connection, header):
         command = header['Command']
@@ -186,8 +225,7 @@ class Server:
         elif command == 'Upload':
             self.upload(connection, header)
         elif command == 'Download':
-            # @TODO: user can only download the file he upload
-            print('Download')
+            self.download(connection, header)
         elif command == 'DeleteFile':
             print('DeleteFile')
         elif command == 'DeleteUser':
