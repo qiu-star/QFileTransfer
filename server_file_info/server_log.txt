@@ -27,3 +27,9 @@ qiu try to login at "2022-03-25 05:04:57" , Stat: Success
 qiu try to delete file "1.txt" at "2022-03-25 05:04:57" , Stat: Success 
 qiu try to login at "2022-03-25 05:05:52" , Stat: Success 
 qiu try to delete file "1.txt" at "2022-03-25 05:05:52" , Stat: FileNotExist 
+qiu try to login at "2022-03-25 05:28:13" , Stat: Success 
+qiu upload a file "1.txt" at 2022-03-25 05:28:13
+qiu try to delete itself at "2022-03-25 05:28:13" , Stat: Success 
+qiu try to login at "2022-03-25 05:31:40" , Stat: Success 
+qiu try to delete itself at "2022-03-25 05:31:40" , Stat: Success 
+qiu try to login at "2022-03-25 05:31:40" , Stat: Fail 

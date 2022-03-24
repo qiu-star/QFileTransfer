@@ -299,6 +299,49 @@ class Server:
             delete_file_log = '\n%s try to delete file "%s" at "%s" , Stat: LoginFail ' % (username, filename, time)
         self.write_log(delete_file_log)
 
+    def delete_all_file_uploaded_by_user(self, username):
+        sql = "select filepath from fileinfo where username = '%s'" % (username)
+        self.__cursor.execute(sql)
+        file_infos = self.__cursor.fetchall()
+        for file_info in file_infos:
+            os.remove(file_info['filepath'])
+
+    def delete_all_record_about_user(self, username):
+        sql = "delete from fileinfo where username = '%s'" % (username)
+        self.__cursor.execute(sql)
+        self.__db.commit()
+        sql = "delete from user where username = '%s'" % (username)
+        self.__cursor.execute(sql)
+        self.__db.commit()
+
+    def delete_user(self, connection, header):
+        # delete all the record and file about the user
+        username = header['user']
+        password = header['password']
+        time = header['time']
+        delete_user_log = ''
+        if self.check_user_password(username, password):
+            self.delete_all_file_uploaded_by_user(username)
+            self.delete_all_record_about_user(username)
+            header = {
+                'Feedback': 'DeleteUser',
+                'stat': 'Success',
+                'fileSize': '',
+                'user': username
+            }
+            self.send_header(connection, header, '128s')
+            delete_user_log = '\n%s try to delete itself at "%s" , Stat: Success ' % (username, time)
+        else:
+            header = {
+                'Feedback': 'DeleteUser',
+                'stat': 'LoginFail',
+                'fileSize': '',
+                'user': username
+            }
+            self.send_header(connection, header, '128s')
+            delete_user_log = '\n%s try to delete itself at "%s" , Stat: LoginFail ' % (username, time)
+        self.write_log(delete_user_log)
+
     def do_command(self, connection, header):
         command = header['Command']
         if command == 'Login':
@@ -316,8 +359,7 @@ class Server:
         elif command == 'DeleteFile':
             self.delete_file(connection, header)
         elif command == 'DeleteUser':
-            # @TODO: delete all the record and file about the user
-            print('DeleteUser')
+            self.delete_user(connection, header)
 
     def deal_conn_thread(self, connection):
         while True:

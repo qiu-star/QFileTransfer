@@ -180,6 +180,22 @@ class Client:
             return False
         return True
 
+    def delete_user(self, username, password):
+        header = {
+            'Command': 'DeleteUser',
+            'fileName': '',
+            'fileSize': '',
+            'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            'user': username,
+            'password': password
+        }
+        self.send_header(header, '1024s')
+        response = self.receive_header('128s')
+        if not response:
+            return False
+        if response['stat'] != 'Success':
+            return False
+        return True
 
 if __name__ == "__main__":
     client = Client()
@@ -195,3 +211,5 @@ if __name__ == "__main__":
     # client.delete_file("qiu", "12", "1.txt") # login fail
     # client.delete_file("qiu", "123", "1.txt") # success
     # client.delete_file("qiu", "123", "1.txt") # no such file
+    client.delete_user("qiu", "123")
+    client.login("qiu", "123")
