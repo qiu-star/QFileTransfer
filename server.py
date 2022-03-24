@@ -78,6 +78,12 @@ class Server:
             return True
         return False
 
+    def get_file_info_uploaded_by_user(self, username, filename):
+        sql = "select * from fileinfo where username = '%s' and filename = '%s'" % (username, filename)
+        self.__cursor.execute(sql)
+        file_info = self.__cursor.fetchone()
+        return file_info
+
     def login_succ(self, connection, username):
         # when client login successfully, server will send the filenames on the server to the client
         header = {
@@ -116,6 +122,33 @@ class Server:
             login_log = '\n%s try to login at "%s" , Stat: Fail ' % (username, time)
         # write log
         self.write_log(login_log)
+
+    def logout(self, connection, header):
+        username = header['user']
+        password = header['password']
+        time = header['time']
+        logout_log = ""
+        if self.check_user_password(username, password):
+            header = {
+                'Feedback': 'Login',
+                'stat': 'Success',
+                'fileSize': '',
+                'user': username
+            }
+            self.send_header(connection, header, '128s')
+            connection.settimeout(60)
+            connection.close()
+            logout_log = '\n%s try to logout at "%s" , Stat: Success ' % (username, time)
+        else:
+            header = {
+                'Feedback': 'Logout',
+                'stat': 'Fail',
+                'fileSize': '',
+                'user': username
+            }
+            self.send_header(connection, header, '128s')
+            logout_log = '\n%s try to logout at "%s" , Stat: Fail ' % (username, time)
+        self.write_log(logout_log)
 
     def register_succ(self, connection, username, password, time):
         sql = "insert into user values ('%s','%s','%s')" % (username, password, time)
@@ -182,9 +215,7 @@ class Server:
 
         if self.check_user_password(username, password):
             # check whether the user has uploaded the file
-            sql = "select * from fileinfo where username = '%s' and filename = '%s'" % (username, filename)
-            self.__cursor.execute(sql)
-            file_info = self.__cursor.fetchone()
+            file_info = self.get_file_info_uploaded_by_user(username, filename)
             if not file_info:
                 header = {
                     'Feedback': 'Download',
@@ -216,19 +247,76 @@ class Server:
             download_log = '\n%s try to download file "%s" at "%s" , Stat: LoginFail ' % (username, filename, time)
         self.write_log(download_log)
 
+    def send_file_info_list(self, connection, header):
+        username = header['user']
+        # send the filenames which the user upload on the server to the client
+        sql = "select filename, upload_time, size from fileinfo where username = '%s'" % (username)
+        self.__cursor.execute(sql)
+        data = self.__cursor.fetchall()
+        self.send_header(connection, data, '1024s')
+
+    def delete_file(self, connection, header):
+        username = header['user']
+        password = header['password']
+        time = header['time']
+        filename = header['fileName']
+        delete_file_log = ''
+        if self.check_user_password(username, password):
+            file_info = self.get_file_info_uploaded_by_user(username, filename)
+            if not file_info:
+                header = {
+                    'Feedback': 'DeleteFile',
+                    'stat': 'FileNotExist',
+                    'fileSize': '',
+                    'user': username
+                }
+                self.send_header(connection, header, '128s')
+                delete_file_log = '\n%s try to delete file "%s" at "%s" , Stat: FileNotExist ' % (username, filename, time)
+            else:
+                # delete the file
+                os.remove(file_info['filepath'])
+                # delete the record in table
+                sql = "delete from fileinfo where username = '%s' and filename = '%s'" % (username, filename)
+                self.__cursor.execute(sql)
+                self.__db.commit()
+                # send response
+                header = {
+                    'Feedback': 'DeleteFile',
+                    'stat': 'Success',
+                    'fileSize': '',
+                    'user': username
+                }
+                self.send_header(connection, header, '128s')
+                delete_file_log = '\n%s try to delete file "%s" at "%s" , Stat: Success ' % (username, filename, time)
+        else:
+            header = {
+                'Feedback': 'DeleteFile',
+                'stat': 'LoginFail',
+                'fileSize': '',
+                'user': username
+            }
+            self.send_header(connection, header, '128s')
+            delete_file_log = '\n%s try to delete file "%s" at "%s" , Stat: LoginFail ' % (username, filename, time)
+        self.write_log(delete_file_log)
+
     def do_command(self, connection, header):
         command = header['Command']
         if command == 'Login':
             self.login(connection, header)
+        elif command == 'Logout':
+            self.logout(connection, header)
         elif command == 'Register':
             self.register(connection, header)
         elif command == 'Upload':
             self.upload(connection, header)
         elif command == 'Download':
             self.download(connection, header)
+        elif command == 'Update':
+            self.send_file_info_list(connection, header)
         elif command == 'DeleteFile':
-            print('DeleteFile')
+            self.delete_file(connection, header)
         elif command == 'DeleteUser':
+            # @TODO: delete all the record and file about the user
             print('DeleteUser')
 
     def deal_conn_thread(self, connection):
@@ -242,6 +330,8 @@ class Server:
                 header_json = str(struct.unpack('1024s', buf)[0], encoding='utf-8').strip('\00')
                 header = json.loads(header_json)
                 self.do_command(connection, header)
+                if header['Command'] == 'Logout':
+                    break
             except socket.timeout:
                 connection.close()
                 break

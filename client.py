@@ -72,9 +72,27 @@ class Client:
         if stat != 'Success':
             return False
         # recieve the file name the user upload on the server
-        file_names = self.receive_header('1024s')
-        print(file_names)  # @TODO: show the file name on GUI
+        file_info_list = self.receive_header('1024s')
+        print(file_info_list)  # @TODO: show the file name on GUI
         return True
+
+    def logout(self, username, password):
+        header = {
+            'Command': 'Logout',
+            'fileName': '',
+            'fileSize': '',
+            'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            'user': username,
+            'password': password
+        }
+        self.send_header(header, '1024s')
+        # wait for the server answer
+        header = self.receive_header('128s')
+        if not header:
+            return
+        if header['stat'] != 'Success':
+            return
+        self.__ssock.close()
 
     def register(self, username, password):
         header = {
@@ -133,6 +151,35 @@ class Client:
         self.receive_file(response['fileSize'], file_path)
         return True
 
+    def get_file_info_list(self, username):
+        header = {
+            'Command': 'Update',
+            'fileName': '',
+            'fileSize': '',
+            'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            'user': username
+        }
+        self.send_header(header, '1024s')
+        file_info_list = self.receive_header('1024s')
+        print(file_info_list)
+
+    def delete_file(self, username, password, file_name):
+        header = {
+            'Command': 'DeleteFile',
+            'fileName': file_name,
+            'fileSize': '',
+            'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            'user': username,
+            'password': password
+        }
+        self.send_header(header, '1024s')
+        response = self.receive_header('128s')
+        if not response:
+            return False
+        if response['stat'] != 'Success':
+            return False
+        return True
+
 
 if __name__ == "__main__":
     client = Client()
@@ -143,3 +190,8 @@ if __name__ == "__main__":
     # client.download("1.png", "qiu", "12") # login fail
     # client.download("1.md", "qiu", "123") # no such file
     # client.download("1.png", "qiu", "123") # success
+    # client.get_file_info_list("qiu")
+    # client.logout("qiu", "123")
+    # client.delete_file("qiu", "12", "1.txt") # login fail
+    # client.delete_file("qiu", "123", "1.txt") # success
+    # client.delete_file("qiu", "123", "1.txt") # no such file
