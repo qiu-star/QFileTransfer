@@ -6,7 +6,7 @@ class Server:
     def __init__(self):
         # open DB
         self.__db = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='ql782134193', db='fileTransfer', charset='utf8')
-        self.__cursor = self.__db.cursor()
+        self.__cursor = self.__db.cursor(pymysql.cursors.DictCursor)
         # generate ssl context
         self.__context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         self.__context.load_verify_locations('./cer/CA/ca.crt')
@@ -84,8 +84,11 @@ class Server:
             'user': username
         }
         self.send_header(connection, header, '128s')
-        # send the filenames on the server to the client
-        self.send_file(connection, file_catalogue)
+        # send the filenames which the user upload on the server to the client
+        sql = "select filename, upload_time, size from fileinfo where username = '%s'" % (username)
+        self.__cursor.execute(sql)
+        data = self.__cursor.fetchall()
+        self.send_header(connection, data, '1024s')
 
     def login_fail(self, connection, username):
         header = {
@@ -158,8 +161,14 @@ class Server:
         file_size = header['fileSize']
         time = header['time']
         user = header['user']
-        file_path = os.path.join('./server_file_storage/', file_name)
+        file_path = os.path.join('./server_file_storage/', user+file_name)
         self.receive_file(connection, file_size, file_path)
+
+        # @TODO: test
+        file_size_str = self.file_size_to_text(int(file_size))
+        sql = "insert into fileinfo values ('%s','%s','%s','%s','%s')" % (file_name, file_path, time, user, file_size_str)
+        self.__cursor.execute(sql)
+        self.__db.commit()
 
         file_size_str = self.file_size_to_text(int(file_size))
         new_file_info = '{"文件名": "%s", "上传者": "%s", "上传时间": "%s", "大小": "%s"}\n' % (file_name, user, time, file_size_str)
@@ -177,6 +186,7 @@ class Server:
         elif command == 'Upload':
             self.upload(connection, header)
         elif command == 'Download':
+            # @TODO: user can only download the file he upload
             print('Download')
         elif command == 'DeleteFile':
             print('DeleteFile')

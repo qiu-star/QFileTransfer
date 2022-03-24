@@ -71,10 +71,9 @@ class Client:
         stat = header['stat']
         if stat != 'Success':
             return False
-        # from the server answer, we will know the filesize of filenames in server
-        file_size = header['fileSize']
-        file_name = os.path.join('./client_cache/', 'file_catalogue.txt')
-        self.receive_file(file_size, file_name)
+        # recieve the file name the user upload on the server
+        file_names = self.receive_header('1024s')
+        print(file_names) # @TODO: show the file name on GUI
         return True
 
     def register(self, username, password):
@@ -114,11 +113,22 @@ class Client:
         self.send_header(header, '1024s')
         # send file
         self.send_file(file_path)
+    
+    def download(self, file_name, username):
+        # header = {
+        #     'Command': 'Download',
+        #     'fileName': file_name,
+        #     'fileSize': '',
+        #     'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+        #     'user': self.username,
+        #     'password': self.password,
+        # }
+        pass
 
 
 if __name__ == "__main__":
     client = Client()
     # client.register("qiu", "123")
     client.login("qiu", "123")  # login succ
-    client.login("qiu", "12")   # login fail
-    client.upload("doc/1.png", "qiu")
+    # client.login("qiu", "12")   # login fail
+    # client.upload("doc/1.txt", "qiu")
