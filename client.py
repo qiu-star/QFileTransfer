@@ -19,6 +19,15 @@ class Client:
         self.__ssock.send(fhead)
         print('send over...')
 
+    def send_file(self, file_path):
+        file_object = open(file_path, 'rb')
+        while True:
+            file_data = file_object.read(1024)
+            if not file_data:
+                break
+            self.__ssock.send(file_data)
+        file_object.close()
+
     def receive_header(self, hformat):
         header_size = struct.calcsize(hformat)
         buf = self.__ssock.recv(header_size)
@@ -87,9 +96,29 @@ class Client:
         else:
             return False
 
+    def upload(self, file_path, username):
+        # check whether the file exists
+        if not os.path.isfile(file_path):
+            print("The File doesn't exists!")
+            return
+        # send header
+        header = {
+            'Command': 'Upload',
+            'fileName': os.path.basename(file_path),
+            'fileSize': os.stat(file_path).st_size,
+            'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+            'user': username,
+            'downloadFilename': '',
+            'cookie': ''
+        }
+        self.send_header(header, '1024s')
+        # send file
+        self.send_file(file_path)
+
 
 if __name__ == "__main__":
     client = Client()
     # client.register("qiu", "123")
     client.login("qiu", "123")  # login succ
     client.login("qiu", "12")   # login fail
+    client.upload("doc/1.png", "qiu")

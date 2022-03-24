@@ -1,6 +1,7 @@
 import socket
 import ssl, threading, struct, json, os, pymysql
 
+
 class Server:
     def __init__(self):
         # open DB
@@ -11,7 +12,7 @@ class Server:
         self.__context.load_verify_locations('./cer/CA/ca.crt')
         self.__context.load_cert_chain('./cer/server/server.crt', './cer/server/server_rsa_private.pem')
         self.__context.verify_mode = ssl.CERT_REQUIRED
-    
+
     def server_listen(self):
         # listen
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0) as sock:
@@ -23,15 +24,15 @@ class Server:
                     print('Connected by: ', addr)
                     thread = threading.Thread(target=self.deal_conn_thread, args=(connection,))
                     thread.start()
-    
+
     def send_header(self, connection, header, hformat):
         header_hex = bytes(json.dumps(header).encode('utf-8'))
         fhead = struct.pack(hformat, header_hex)
         connection.send(fhead)
         print('send over...')
 
-    def send_file(self, connection, file_name):
-        file_object = open(file_name, 'rb')
+    def send_file(self, connection, file_path):
+        file_object = open(file_path, 'rb')
         while True:
             file_data = file_object.read(1024)
             if not file_data:
@@ -39,13 +40,43 @@ class Server:
             connection.send(file_data)
         file_object.close()
 
+    def receive_file(self, connection, file_size, file_name):
+        print('file name: %s, filesize: %s' % (file_name, file_size))
+        recvd_size = 0
+        file = open(file_name, 'wb')
+        print('start receiving...')
+        while not recvd_size == file_size:
+            if file_size - recvd_size > 1024:
+                rdata = connection.recv(1024)
+                recvd_size += len(rdata)
+            else:
+                rdata = connection.recv(file_size - recvd_size)
+                recvd_size = file_size
+            file.write(rdata)
+        file.close()
+        print('receive done')
+
     def write_log(self, log_txt):
-        with open('./server_cache/server_log.txt', 'a', encoding='utf-8') as log_file:
+        with open('./server_file_info/server_log.txt', 'a', encoding='utf-8') as log_file:
             log_file.write(log_txt)
+
+    def write_file_catalogue(self, file_info):
+        with open('./server_file_info/file_catalogue.txt', 'a', encoding='utf-8') as file_catalogue:
+            file_catalogue.write(file_info)
+
+    def file_size_to_text(self, file_size):
+        if file_size < 1024:
+            return "%s bytes" % (file_size)
+        elif file_size/1024 < 1024:
+            return "%.2f Kb" % (file_size/1024)
+        elif (file_size/1024)/1024 < 1024:
+            return "%.2f Mb" % ((file_size/1024)/1024)
+        else:
+            return "%.2f Gb" % (((file_size/1024)/1024)/1024)
 
     def login_succ(self, connection, username):
         # when client login successfully, server will send the filenames on the server to the client
-        file_catalogue = './server_cache/file_catalogue.txt'
+        file_catalogue = './server_file_info/file_catalogue.txt'
         header = {
             'Feedback': 'Login',
             'stat': 'Success',
@@ -122,6 +153,21 @@ class Server:
             register_log = '\n%s try to register at "%s" , Stat: Success ' % (username, time)
         self.write_log(register_log)
 
+    def upload(self, connection, header):
+        file_name = header['fileName']
+        file_size = header['fileSize']
+        time = header['time']
+        user = header['user']
+        file_path = os.path.join('./server_file_storage/', file_name)
+        self.receive_file(connection, file_size, file_path)
+
+        file_size_str = self.file_size_to_text(int(file_size))
+        new_file_info = '{"文件名": "%s", "上传者": "%s", "上传时间": "%s", "大小": "%s"}\n' % (file_name, user, time, file_size_str)
+        self.write_file_catalogue(new_file_info)
+
+        upload_log = '\n%s upload a file "%s" at %s' % (user, file_name, time)
+        self.write_log(upload_log)
+
     def do_command(self, connection, header):
         command = header['Command']
         if command == 'Login':
@@ -129,14 +175,13 @@ class Server:
         elif command == 'Register':
             self.register(connection, header)
         elif command == 'Upload':
-            print('Upload')
+            self.upload(connection, header)
         elif command == 'Download':
             print('Download')
         elif command == 'DeleteFile':
             print('DeleteFile')
         elif command == 'DeleteUser':
             print('DeleteUser')
-        
 
     def deal_conn_thread(self, connection):
         while True:
@@ -155,6 +200,7 @@ class Server:
             except ConnectionResetError:
                 connection.close()
                 break
+
 
 if __name__ == "__main__":
     server = Server()
