@@ -33,3 +33,15 @@ qiu try to delete itself at "2022-03-25 05:28:13" , Stat: Success
 qiu try to login at "2022-03-25 05:31:40" , Stat: Success 
 qiu try to delete itself at "2022-03-25 05:31:40" , Stat: Success 
 qiu try to login at "2022-03-25 05:31:40" , Stat: Fail 
+qiu try to register at "2022-03-25 20:39:50" , Stat: Success 
+wang try to register at "2022-03-25 21:27:38" , Stat: Success 
+lin try to register at "2022-03-25 21:28:20" , Stat: Success 
+q try to register at "2022-03-25 21:28:36" , Stat: Success 
+qiu try to register at "2022-03-25 21:28:49" , Stat: Fail 
+qiu try to login at "2022-03-25 21:29:03" , Stat: Success 
+qiu try to login at "2022-03-25 21:29:15" , Stat: Success 
+qiu try to login at "2022-03-25 21:30:51" , Stat: Success 
+qiu try to login at "2022-03-25 21:31:34" , Stat: Success 
+qiu try to login at "2022-03-25 21:32:19" , Stat: Success 
+qiu try to login at "2022-03-25 21:32:55" , Stat: Success 
+qiu try to login at "2022-03-25 21:46:45" , Stat: Success 

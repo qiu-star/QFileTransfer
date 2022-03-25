@@ -66,15 +66,17 @@ class Client:
         # wait for the server answer
         header = self.receive_header('128s')
         if not header:
-            return False
+            return None
         # from the server answer, we will know whether login successfully or not
         stat = header['stat']
         if stat != 'Success':
-            return False
+            return None
         # recieve the file name the user upload on the server
         file_info_list = self.receive_header('1024s')
-        print(file_info_list)  # @TODO: show the file name on GUI
-        return True
+        if file_info_list:
+            return file_info_list
+        else:
+            return "SuccessLogin"  # which means the user hasn't uploaded anything
 
     def logout(self, username, password):
         header = {
@@ -199,8 +201,8 @@ class Client:
 
 if __name__ == "__main__":
     client = Client()
-    # client.register("qiu", "123")
-    client.login("qiu", "123")  # login succ
+    client.register("qiu", "123")
+    # client.login("qiu", "123")  # login succ
     # client.login("qiu", "12")   # login fail
     # client.upload("doc/1.txt", "qiu")
     # client.download("1.png", "qiu", "12") # login fail
@@ -211,5 +213,5 @@ if __name__ == "__main__":
     # client.delete_file("qiu", "12", "1.txt") # login fail
     # client.delete_file("qiu", "123", "1.txt") # success
     # client.delete_file("qiu", "123", "1.txt") # no such file
-    client.delete_user("qiu", "123")
-    client.login("qiu", "123")
+    # client.delete_user("qiu", "123")
+    # client.login("qiu", "123")
