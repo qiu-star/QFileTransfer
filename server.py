@@ -57,7 +57,7 @@ class Server:
         print('receive done')
 
     def write_log(self, log_txt):
-        with open('./server_file_info/server_log.txt', 'a', encoding='utf-8') as log_file:
+        with open('./server_log/server_log.txt', 'a', encoding='utf-8') as log_file:
             log_file.write(log_txt)
 
     def file_size_to_text(self, file_size):

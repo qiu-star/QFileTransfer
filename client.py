@@ -163,7 +163,7 @@ class Client:
         }
         self.send_header(header, '1024s')
         file_info_list = self.receive_header('1024s')
-        print(file_info_list)
+        return file_info_list
 
     def delete_file(self, username, password, file_name):
         header = {
