@@ -9,3 +9,18 @@ qiu download a file "日推封面.jpg" at 2022-03-30 19:37:57
 qiu try to delete file "日推封面.jpg" at "2022-03-30 19:38:43" , Stat: Success 
 qiu try to delete itself at "2022-03-30 19:39:40" , Stat: Success 
 qiu try to login at "2022-03-30 19:40:35" , Stat: Fail 
+qiu try to register at "2022-03-30 20:02:53" , Stat: Success 
+qiu try to register at "2022-03-30 20:03:04" , Stat: Fail 
+qiu try to login at "2022-03-30 20:03:14" , Stat: Success 
+qiu upload a file "日推封面.jpg" at 2022-03-30 20:03:37
+qiu upload a file "体系结构作业.txt" at 2022-03-30 20:04:19
+qiu try to delete itself at "2022-03-30 20:04:33" , Stat: Success 
+qiu try to register at "2022-03-30 20:05:28" , Stat: Success 
+qiu try to register at "2022-03-30 20:05:40" , Stat: Fail 
+qiu try to login at "2022-03-30 20:05:49" , Stat: Success 
+qiu upload a file "扫码送券.png" at 2022-03-30 20:06:26
+qiu upload a file "日推封面.jpg" at 2022-03-30 20:07:23
+qiu download a file "日推封面.jpg" at 2022-03-30 20:08:03
+qiu try to delete file "扫码送券.png" at "2022-03-30 20:08:31" , Stat: Success 
+qiu try to delete itself at "2022-03-30 20:08:59" , Stat: Success 
+qiu try to login at "2022-03-30 20:09:12" , Stat: Fail 
