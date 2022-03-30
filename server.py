@@ -194,6 +194,11 @@ class Server:
         file_size = header['fileSize']
         time = header['time']
         user = header['user']
+        password = header['password']
+        if not self.check_user_password(user, password):
+            upload_log = '\n%s try to upload file "%s" at "%s" , Stat: LoginFail ' % (user, file_name, time)
+            self.write_log(upload_log)
+            return
         file_path = os.path.join('./server_file_storage/', user+file_name)
         self.receive_file(connection, file_size, file_path)
 

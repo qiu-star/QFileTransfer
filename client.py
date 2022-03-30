@@ -115,7 +115,7 @@ class Client:
         else:
             return False
 
-    def upload(self, file_path, username):
+    def upload(self, file_path, username, password):
         # check whether the file exists
         if not os.path.isfile(file_path):
             print("The File doesn't exists!")
@@ -127,8 +127,7 @@ class Client:
             'fileSize': os.stat(file_path).st_size,
             'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
             'user': username,
-            'downloadFilename': '',
-            'cookie': ''
+            'password': password
         }
         self.send_header(header, '1024s')
         # send file
@@ -159,7 +158,8 @@ class Client:
             'fileName': '',
             'fileSize': '',
             'time': time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
-            'user': username
+            'user': username,
+            'password': ''
         }
         self.send_header(header, '1024s')
         file_info_list = self.receive_header('1024s')

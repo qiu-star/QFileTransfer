@@ -1,0 +1,11 @@
+qiu try to register at "2022-03-30 19:31:34" , Stat: Success 
+lin try to register at "2022-03-30 19:32:05" , Stat: Success 
+lin try to register at "2022-03-30 19:32:15" , Stat: Fail 
+qiu try to login at "2022-03-30 19:32:49" , Stat: Fail 
+qiu try to login at "2022-03-30 19:33:10" , Stat: Success 
+qiu upload a file "日推封面.jpg" at 2022-03-30 19:35:05
+qiu upload a file "网址.txt" at 2022-03-30 19:35:27
+qiu download a file "日推封面.jpg" at 2022-03-30 19:37:57
+qiu try to delete file "日推封面.jpg" at "2022-03-30 19:38:43" , Stat: Success 
+qiu try to delete itself at "2022-03-30 19:39:40" , Stat: Success 
+qiu try to login at "2022-03-30 19:40:35" , Stat: Fail 

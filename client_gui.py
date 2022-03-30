@@ -104,7 +104,7 @@ class UploadFrame(Frame):
     def upload(self):
         file_path = self.file_path.get()
         showinfo('提示！', message='点击确认文件将开始后台上传')
-        thread = threading.Thread(target=self.client.upload, args=(file_path, self.client.username, ))
+        thread = threading.Thread(target=self.client.upload, args=(file_path, self.client.username, self.client.password))
         thread.start()
         self.file_path.set("")
     
